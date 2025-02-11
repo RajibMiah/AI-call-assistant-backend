@@ -23,7 +23,7 @@ app.use(cookieParser()); // Cookie parsing
 app.use('/api/appointments', require('./routes/appointment.routes'));
 
 // ✅ Fix the `/initiate` Route
-app.get('/initiate', (req, res) => {
+app.get('/', (req, res) => {
     res.status(200).json({
         message: "Server responded"
     });
