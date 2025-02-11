@@ -1,0 +1,36 @@
+name: Deploy Express App via GHCR to Hostinger VPS
+
+on:
+  push:
+    branches:
+      - main # Change this if your default branch is different
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        run: |
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+
+      - name: Build and Push Docker Image to GHCR
+        run: |
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/ai-assistant-server:latest .
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/ai-assistant-server:latest
+
+      - name: Deploy on VPS via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+            docker stop ai-assistant-server || true
+            docker rm ai-assistant-server || true
+            docker pull ghcr.io/${{ secrets.GHCR_USERNAME }}/ai-assistant-server:latest
+            docker run -d -p 3000:3000 --name ai-assistant-server ghcr.io/${{ secrets.GHCR_USERNAME }}/ai-assistant-server:latest
