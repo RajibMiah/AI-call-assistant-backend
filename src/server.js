@@ -22,7 +22,7 @@ const server = app.listen(PORT, () => {
 
 // Graceful shutdown
 const cleanup = () => {
-    console.log("\n🛑 Stopping the server and SSH tunnel...");
+    
     server.close(() => {
         console.log("✅ Express server stopped.");
         process.exit(0);
