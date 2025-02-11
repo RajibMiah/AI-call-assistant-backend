@@ -1,23 +1,40 @@
-# Use the official Node.js image as a base
-FROM node:18
 
-# Set the working directory inside the container
+# syntax = docker/dockerfile:1
+
+# Adjust NODE_VERSION as desired
+ARG NODE_VERSION=20.18.0
+FROM node:${NODE_VERSION}-slim AS base
+
+LABEL fly_launch_runtime="Node.js"
+
+# Node.js app lives here
 WORKDIR /app
 
-# Copy package.json and package-lock.json first (to optimize caching)
-COPY package*.json ./
+# Set production environment
+ENV NODE_ENV="production"
 
-# Install dependencies
+
+# Throw-away build stage to reduce size of final image
+FROM base AS build
+
+# Install packages needed to build node modules
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
+
+# Install node modules
+COPY package.json ./
 RUN npm install
 
-# Copy the rest of the application code
+# Copy application code
 COPY . .
 
-# Set working directory inside src (since server.js is inside src)
-WORKDIR /app/src
 
-# Expose the application's port
-EXPOSE 5000
+# Final stage for app image
+FROM base
 
-# Use nodemon for development, node for production
-CMD ["npm", "run", "dev"]
+# Copy built application
+COPY --from=build /app /app
+
+# Start the server by default, this can be overwritten at runtime
+EXPOSE 3000
+CMD [ "npm", "run", "start" ]
