@@ -8,12 +8,12 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --only=production
 
 # Copy the entire project (including /src)
 COPY . .
 
-# Expose port 5000 for the application
+# Expose port 5000 for the application (handled by NGINX)
 EXPOSE 5000
 
 # Start the application

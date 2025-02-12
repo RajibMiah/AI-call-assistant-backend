@@ -29,8 +29,8 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
             docker stop ai-assistant-server || true
             docker rm ai-assistant-server || true
             docker pull ghcr.io/${{ secrets.GHCR_USERNAME }}/ai-assistant-server:latest
-            docker run -d -p 3000:3000 --name ai-assistant-server ghcr.io/${{ secrets.GHCR_USERNAME }}/ai-assistant-server:latest
+            docker run -d -p 3000:3000 --restart unless-stopped --name ai-assistant-server ghcr.io/${{ secrets.GHCR_USERNAME }}/ai-assistant-server:latest

@@ -175,7 +175,7 @@ exports.getAvailableSlots = async (startDate, days, lids, pids) => {
         const endpoint = `/appointment_slots?subdomain=${SUBDOMAIN}&start_date=${startDate}&days=${days}&lids[]=${lids.join(',')}&pids[]=${pids.join(',')}`;
         console.log("endpoint" , endpoint);
         const response = await apiGet(endpoint);
-        return response.data.slots || [];  // Assuming the third-party API returns available slots in this field
+        return response.data || [];  // Assuming the third-party API returns available slots in this field
     } catch (error) {
         console.error(`❌ Error fetching available slots: ${error.response?.data || error.message}`);
         throw new Error("Error fetching available slots");

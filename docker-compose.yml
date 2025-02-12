@@ -6,14 +6,13 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - .:/app  # Mount project folder to enable live reload
-      - /app/node_modules  # Avoid overwriting node_modules
+      - ./src:/app/src  # Only mount src for live reload
+      - /app/node_modules  # Prevent overwriting installed node_modules
     depends_on:
       - mongo
     environment:
-      MONGO_URI: "mongodb://mongo:27017/mydatabase"
-    working_dir: /app/src
-    command: ["npm", "run", "dev"]  # Runs Nodemon inside the container
+      - MONGO_URI=mongodb://mongo:27017/mydatabase
+    command: ["npm", "run", "dev"]  # Run in dev mode with Nodemon
 
   mongo:
     image: mongo:6

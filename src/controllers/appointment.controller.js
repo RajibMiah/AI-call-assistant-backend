@@ -90,9 +90,9 @@ exports.bookAppointment = async (req, res) => {
 
 
 exports.getAvailableSlots = async (req, res) => {
-
-    console.log("availiabe slot body" , req.body);
-    const { start_date, days, lids, pids } = req.body;
+    console.log("Available slot body", req.body);
+    
+    const { start_date, start_time, days, lids, pids, operatory_id } = req.body;
 
     // Validate input
     if (!start_date || !days || !lids || !pids || lids.length === 0 || pids.length === 0) {
@@ -108,32 +108,37 @@ exports.getAvailableSlots = async (req, res) => {
     try {
         // Step 1: Fetch available slots from the service
         const availableSlots = await nexHealthService.getAvailableSlots(start_date, days, lids, pids);
-
-        // Step 2: Group available slots by location and patient
-        const groupedSlots = groupSlotsByLocationAndPatient(availableSlots);
-
-        // Step 3: Check if the preferred slot is available
-        const requestedSlot = moment(start_date).format('YYYY-MM-DD');
-        const matchingSlot = groupedSlots.find(slot => slot.start_time === requestedSlot);
-
-        if (matchingSlot) {
-            // Preferred slot found, return the response with status 200
-            return res.status(200).json({
-                code: true,
-                description: "Available slots fetched successfully",
-                data: groupedSlots,
-                count: groupedSlots.length
+        
+        let allSlots = [];
+        availableSlots.forEach(slotData => {
+            slotData.slots.forEach(slot => {
+                if (!operatory_id || operatory_id.includes(slot.operatory_id)) {
+                    allSlots.push({
+                        lid: slotData.lid,
+                        pid: slotData.pid,
+                        time: new Date(slot.time),
+                        end_time: new Date(slot.end_time),
+                        operatory_id: slot.operatory_id
+                    });
+                }
             });
-        }
-
-        // If the preferred slot is not found, return 200 with the nearest available slots
-        return res.status(200).json({
-            code: true,
-            description: "Requested time not available, nearest slots",
-            data: groupedSlots,
-            count: groupedSlots.length
         });
 
+        // Convert start_time to a Date object for comparison
+        const referenceTime = new Date(`${start_date}T${start_time}`);
+
+        // Step 2: Filter and sort the slots based on the nearest available time
+        allSlots.sort((a, b) => Math.abs(a.time - referenceTime) - Math.abs(b.time - referenceTime));
+
+        // Step 3: Select the top 3 nearest slots
+        const nearestSlots = allSlots.slice(0, 3);
+
+        return res.status(200).json({
+            code: true,
+            description: nearestSlots.length > 0 ? "Requested time not available, nearest slots found" : "No available slots found",
+            data: nearestSlots,
+            count: nearestSlots.length
+        });
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -147,46 +152,47 @@ exports.getAvailableSlots = async (req, res) => {
 };
 
 
-// Helper function to group the available slots by location and patient
-const groupSlotsByLocationAndPatient = (availableSlots) => {
-    const groupedData = [];
 
-    availableSlots.forEach((slot) => {
-        // Find existing group for this location and patient
-        const existingGroup = groupedData.find(group => group.lid === slot.lid && group.pid === slot.pid);
+// // Helper function to group the available slots by location and patient
+// const groupSlotsByLocationAndPatient = (availableSlots) => {
+//     const groupedData = [];
 
-        // If group does not exist, create one
-        if (!existingGroup) {
-            groupedData.push({
-                lid: slot.lid,
-                pid: slot.pid,
-                operatory_id: slot.operatory_id,
-                slots: [
-                    {
-                        time: slot.start_time,
-                        operatory_id: slot.operatory_id,
-                        provider_id: slot.provider_id
-                    }
-                ],
-                next_available_date: moment(slot.start_time).format('YYYY-MM-DD')
-            });
-        } else {
-            // If group exists, add the new slot to it
-            existingGroup.slots.push({
-                time: slot.start_time,
-                operatory_id: slot.operatory_id,
-                provider_id: slot.provider_id
-            });
-            // Update next available date (if necessary)
-            const nextDate = moment(slot.start_time).format('YYYY-MM-DD');
-            if (moment(nextDate).isBefore(existingGroup.next_available_date)) {
-                existingGroup.next_available_date = nextDate;
-            }
-        }
-    });
+//     availableSlots.forEach((slot) => {
+//         // Find existing group for this location and patient
+//         const existingGroup = groupedData.find(group => group.lid === slot.lid && group.pid === slot.pid);
 
-    return groupedData;
-};
+//         // If group does not exist, create one
+//         if (!existingGroup) {
+//             groupedData.push({
+//                 lid: slot.lid,
+//                 pid: slot.pid,
+//                 operatory_id: slot.operatory_id,
+//                 slots: [
+//                     {
+//                         time: slot.start_time,
+//                         operatory_id: slot.operatory_id,
+//                         provider_id: slot.provider_id
+//                     }
+//                 ],
+//                 next_available_date: moment(slot.start_time).format('YYYY-MM-DD')
+//             });
+//         } else {
+//             // If group exists, add the new slot to it
+//             existingGroup.slots.push({
+//                 time: slot.start_time,
+//                 operatory_id: slot.operatory_id,
+//                 provider_id: slot.provider_id
+//             });
+//             // Update next available date (if necessary)
+//             const nextDate = moment(slot.start_time).format('YYYY-MM-DD');
+//             if (moment(nextDate).isBefore(existingGroup.next_available_date)) {
+//                 existingGroup.next_available_date = nextDate;
+//             }
+//         }
+//     });
+
+//     return groupedData;
+// };
 
 
 // Controller to cancel an appointment
