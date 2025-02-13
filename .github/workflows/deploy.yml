@@ -29,8 +29,13 @@ jobs:
                   username: ${{ secrets.VPS_USER }}
                   key: ${{ secrets.VPS_SSH_KEY }}
                   script: |
-                      echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+                      echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
                       docker stop ai-assistant-server || true
                       docker rm ai-assistant-server || true
                       docker pull ghcr.io/${{ secrets.GHCR_USERNAME }}/ai-assistant-server:latest
-                      docker run -d -p 5000:5000 --restart unless-stopped --name ai-assistant-server ghcr.io/${{ secrets.GHCR_USERNAME }}/ai-assistant-server:latest
+                      docker run -d -p 5000:5000 --restart unless-stopped --name ai-assistant-server \
+                        -e NEXHEALTH_API_URL=https://nexhealth.info \
+                        -e NEXHEALTH_SUBDOMAIN=fomoline-demo-practice-sr8swn \
+                        -e NEXHEALTH_API_KEY=dXNlci01Nzgtc2FuZGJveA.gi-wu0zO0mA6K3Ge6TZQqmXzwfPYEErV \
+                        -e NEXHEALTH_LOCATION_ID=293267 \
+                        ghcr.io/${{ secrets.GHCR_USERNAME }}/ai-assistant-server:latest
