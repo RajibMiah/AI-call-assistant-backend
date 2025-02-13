@@ -11,10 +11,8 @@ exports.bookAppointment = async (req, res) => {
             email,
             date_of_birth,
             phone_number,
-            start_time,
-            operatory_id,
             note,
-            appointment_name,
+            appointment_type_obj,
             selected_date_time,
         } = req.body;
 
@@ -24,14 +22,14 @@ exports.bookAppointment = async (req, res) => {
             !email ||
             !date_of_birth ||
             !phone_number ||
-            !start_time ||
-            !operatory_id
+            typeof appointment_type_obj !== 'object' ||
+            typeof selected_date_time !== 'object'
         ) {
             return res.status(400).json({
                 code: false,
-                description: 'Missing required fields',
+                description: 'Missing or incorrect required fields',
                 error: [
-                    'Required: first_name, last_name, email, date_of_birth, phone_number, start_time, operatory_id',
+                    'Required: first_name, last_name, email, date_of_birth, phone_number, appointment_type_obj (object), selected_date_time (string)',
                 ],
                 data: {},
                 count: 0,
@@ -45,6 +43,8 @@ exports.bookAppointment = async (req, res) => {
             last_name
         );
 
+        let is_new_patient = false;
+
         if (!patient) {
             console.log('🚀 Patient not found. Registering...');
             patient = await nexHealthService.registerPatient(
@@ -55,21 +55,19 @@ exports.bookAppointment = async (req, res) => {
                 date_of_birth,
                 phone_number
             );
+            is_new_patient = true;
         }
 
-        const provider_id = selected_date_time.pid;
-
-        let appointment_type = await nexHealthService.findAppointmentType(
-            appointment_name
-        );
+        // let appointment_type = await nexHealthService.findAppointmentType(
+        //     appointment_name
+        // );
 
         let appointment = await nexHealthService.bookAppointmentService(
             patient,
-            provider_id,
-            start_time,
-            operatory_id,
-            appointment_type,
-            note
+            appointment_type_obj,
+            selected_date_time,
+            note,
+            is_new_patient
         );
 
         res.status(201).json({
@@ -164,7 +162,8 @@ exports.getAvailableSlots = async (req, res) => {
 
 // Controller to cancel an appointment
 exports.cancelAppointment = async (req, res) => {
-    const { email, phone_number, first_name, last_name } = req.body;
+    const { email, phone_number, first_name, last_name, appointment_type_id } =
+        req.body;
 
     // Validate input
     if (!email && !phone_number && !first_name && !last_name) {
@@ -197,7 +196,7 @@ exports.cancelAppointment = async (req, res) => {
         }
 
         // Step 2: Retrieve the appointments for the patient using the patient ID
-        const appointments = await nexHealthService.getAppointmentsByPatientId(
+        const appointments = await nexHealthService.getAppointmentsByDetails(
             patient.id
         );
 
@@ -211,12 +210,14 @@ exports.cancelAppointment = async (req, res) => {
             });
         }
 
-        // Step 3: Assume we cancel the first appointment found (you can enhance this with other logic)
-        const appointment = appointments[0]; // Or choose a specific appointment if necessary
+        const selected_appointment = appointments.find(
+            (data) => data.appointment_type_id === appointment_type_id
+        );
 
+        console.log('filtred appointment arg====', selected_appointment);
         // Step 4: Cancel the appointment
         const cancelResponse = await nexHealthService.cancelAppointment(
-            appointment.id
+            selected_appointment.id
         );
 
         // Step 5: Return the successful cancellation response

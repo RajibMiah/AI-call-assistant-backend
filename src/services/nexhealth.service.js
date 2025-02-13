@@ -5,14 +5,14 @@ const LOCATION_ID = process.env.NEXHEALTH_LOCATION_ID;
 
 exports.bookAppointmentService = async (
     patient,
-    provider_id,
-    start_time,
-    operatory_id,
-    appointment_type,
-    note
+    appointment_type_obj,
+    selected_date_time,
+    note,
+    is_new_patient
 ) => {
+    const { lid, pid, slots } = selected_date_time;
     const end_time = new Date(
-        new Date(start_time).getTime() + appointment_type.minutes * 60000
+        new Date(slots[0].time).getTime() + appointment_type_obj.minutes * 60000
     ).toISOString();
 
     return apiPost(
@@ -20,15 +20,15 @@ exports.bookAppointmentService = async (
         {
             appt: {
                 patient_id: patient.id,
-                provider_id: provider_id,
-                start_time: new Date(start_time).toISOString(),
-                operatory_id: operatory_id,
+                provider_id: pid,
+                start_time: slots[0].time,
+                operatory_id: slots[0].operatory_id,
                 end_time: end_time,
-                // appointment_type_id: appointment_type.id,
+                // appointment_type_id: appointment_type_obj.id,
                 note: note || '',
                 unavailable: false,
                 is_guardian: false,
-                is_new_clients_patient: false,
+                is_new_clients_patient: is_new_patient,
                 referrer: '',
                 patient: {
                     first_name: patient.first_name,
@@ -93,15 +93,23 @@ exports.findPatientByDetails = async (
     }
 };
 
-exports.getAppointmentsByPatientId = async (appointmentId) => {
+exports.getAppointmentsByDetails = async (patientId) => {
     try {
-        const endpoint = `/appointments/${appointmentId}?subdomain=${SUBDOMAIN}&include[]=patient&include[]=patient`;
+        const start = new Date().toISOString();
+        const end = new Date();
+        end.setMonth(end.getMonth() + 5);
+        const endISOString = end.toISOString();
+
+        const endpoint = `/appointments?subdomain=${SUBDOMAIN}&location_id=${LOCATION_ID}&start=${start}&end=${endISOString}&patient_id=${patientId}`;
 
         const response = await apiGet(endpoint);
-
-        return response.data.appointment || null; // Return the appointment data if found
+        console.log(
+            'Appointments fetched by patient ID ===== \n',
+            response.data
+        );
+        return response.data || null; // Return the appointment data if found
     } catch (error) {
-        throw new Error(`Error fetching appointment: ${error.message}`);
+        throw new Error(`Error fetching appointments: ${error.message}`);
     }
 };
 
