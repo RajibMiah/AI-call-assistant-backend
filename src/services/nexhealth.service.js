@@ -5,25 +5,26 @@ const LOCATION_ID = process.env.NEXHEALTH_LOCATION_ID;
 
 exports.bookAppointmentService = async (
     patient,
-    appointment_type_obj,
+    appointment_type,
     selected_date_time,
     note,
-    is_new_patient
+    is_new_patient,
+    provider_id
 ) => {
-    const { lid, pid, slots } = selected_date_time;
-    const end_time = new Date(
-        new Date(slots[0].time).getTime() + appointment_type_obj.minutes * 60000
-    ).toISOString();
+    // const { lid, pid, slots } = selected_date_time;
+    // const end_time = new Date(
+    //     new Date(slots[0].time).getTime() + appointment_type.minutes * 60000
+    // ).toISOString();
 
     return apiPost(
         `/appointments?subdomain=${SUBDOMAIN}&location_id=${LOCATION_ID}&notify_patient=false`,
         {
             appt: {
                 patient_id: patient.id,
-                provider_id: pid,
-                start_time: slots[0].time,
-                operatory_id: slots[0].operatory_id,
-                end_time: end_time,
+                provider_id: provider_id,
+                start_time: selected_date_time.start_time,
+                operatory_id: selected_date_time.operatory_id,
+                end_time: selected_date_time.end_time,
                 // appointment_type_id: appointment_type_obj.id,
                 note: note || '',
                 unavailable: false,
@@ -49,6 +50,17 @@ exports.bookAppointmentService = async (
     );
 };
 
+exports.getAppointmentType = async (req, res) => {
+    try {
+        const endpoint = `/appointment_types?subdomain=${SUBDOMAIN}&location_id=${LOCATION_ID}&include[]=name&include[]=minutes`;
+        const response = await apiGet(endpoint);
+
+        return response.data;
+    } catch (error) {
+        console.log('Error -----', error);
+        return null;
+    }
+};
 // 📌 Get Providers
 exports.getProviders = async () => {
     return apiGet(
@@ -148,7 +160,7 @@ exports.registerPatient = async (
     );
 };
 
-exports.findAppointmentType = async (appointmentName) => {
+exports.findAppointmentType = async (appointment_type_id) => {
     const response = await apiGet(
         `/appointment_types?subdomain=${SUBDOMAIN}&location_id=${LOCATION_ID}`
     );
@@ -156,7 +168,7 @@ exports.findAppointmentType = async (appointmentName) => {
     if (!response || !response.data) return null; // Handle edge cases
 
     const matchedAppointmentType = response.data.find(
-        (type) => type.name.toLowerCase() === appointmentName.toLowerCase()
+        (type) => type.id === appointment_type_id
     );
 
     return matchedAppointmentType ? matchedAppointmentType : null;
@@ -223,5 +235,65 @@ exports.cancelAppointment = async (appointmentId) => {
         return response.data;
     } catch (error) {
         throw new Error(`Error canceling appointment: ${error.message}`);
+    }
+};
+
+exports.findSelectedAppointmentSlot = async (
+    provider_id,
+    start_time,
+    end_time,
+    operatory_id
+) => {
+    try {
+        const endpoint = `/appointment_slots?subdomain=${SUBDOMAIN}&start_date=${start_time}&days=1&pids[]=${provider_id}&lids[]=${LOCATION_ID}&operatory_ids[]=${operatory_id}`;
+
+        const response = await apiGet(endpoint);
+        console.log(
+            'API Response:',
+            JSON.stringify(response?.data?.slots, null, 2)
+        ); // Debugging
+        const slots =
+            response.data?.slots ||
+            response?.slots ||
+            response.data?.data?.slots;
+
+        console.log('Looking for:', { start_time, end_time, operatory_id });
+
+        const slot = slots.find((slot) => {
+            if (!slot.time || !slot.end_time || !slot.operatory_id)
+                return false; // Prevent undefined errors
+
+            const slotStartTime = new Date(slot.time).toISOString();
+            const slotEndTime = new Date(slot.end_time).toISOString();
+            const expectedStartTime = new Date(start_time).toISOString();
+            const expectedEndTime = new Date(end_time).toISOString();
+
+            console.log('Comparing Slot:', {
+                slotStartTime,
+                expectedStartTime,
+                slotEndTime,
+                expectedEndTime,
+                slotOperatory: slot.operatory_id,
+                expectedOperatory: Number(operatory_id),
+            });
+
+            return (
+                slotStartTime === expectedStartTime &&
+                slotEndTime === expectedEndTime &&
+                Number(slot.operatory_id) === Number(operatory_id)
+            );
+        });
+
+        if (!slot) {
+            console.error('❌ Error: No matching slot found!');
+            throw new Error('No matching slot found for the given criteria');
+        }
+
+        console.log('✅ Matching Slot Found:', slot);
+        return slot;
+    } catch (error) {
+        throw new Error(
+            `Error finding selected appointment slot: ${error.message}`
+        );
     }
 };
