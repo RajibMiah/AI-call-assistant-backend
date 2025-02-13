@@ -24,6 +24,9 @@
       "editor.defaultFormatter": "ms-vscode.cpptools"
     },
     "prettier.singleQuote": true,
-    "prettier.tabWidth": 4
+    "prettier.tabWidth": 4,
+    "github-actions.workflows.pinned.workflows": [
+      ".github/workflows/deploy.yml"
+    ]
   }
   
