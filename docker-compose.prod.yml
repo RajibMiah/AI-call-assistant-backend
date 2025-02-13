@@ -5,6 +5,11 @@ services:
     image: ghcr.io/rajibmiah/ai-assistant-server:latest
     environment:
       - NODE_ENV=production
+      - NEXHEALTH_API_URL=https://nexhealth.info
+      - NEXHEALTH_SUBDOMAIN=fomoline-demo-practice-sr8swn
+      - NEXHEALTH_API_KEY=dXNlci01Nzgtc2FuZGJveA.gi-wu0zO0mA6K3Ge6TZQqmXzwfPYEErV
+      - NEXHEALTH_LOCATION_ID=293267
+      
     env_file:
       - .env
     command: ["npm", "run", "start"]  # Run production server

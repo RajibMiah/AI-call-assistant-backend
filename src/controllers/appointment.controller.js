@@ -308,7 +308,7 @@ exports.getAppointmentType = async (req, res) => {
             name,
             minutes,
         }));
-
+        console.log('response data', filteredData);
         res.status(200).json({
             code: true,
             description: 'appointment type get successfull',
