@@ -1,31 +1,62 @@
-version: "3.8"
+
 
 services:
   backend:
-    image: ghcr.io/rajibmiah/ai-assistant-server:latest
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./src:/app/src  # Only mount src for live reload
-      - /app/node_modules  # Prevent overwriting installed node_modules
-    depends_on:
-      - mongo
+    build:
+      context: .  # Ensure Dockerfile exists in the root directory
+    image: ghcr.io/rajibmiah/ai-assistant-backend:latest
+    container_name: ai-assistant-backend
     environment:
+      - NODE_ENV=production
       - MONGO_URI=mongodb://mongo:27017/mydatabase
       - NEXHEALTH_API_URL=https://nexhealth.info
       - NEXHEALTH_SUBDOMAIN=fomoline-demo-practice-sr8swn
-      - NEXHEALTH_API_KEY=dXNlci01Nzgtc2FuZGJveA.gi-wu0zO0mA6K3Ge6TZQqmXzwfPYEErV
+      #- NEXHEALTH_API_KEY=dXNlci01Nzgtc2FuZGJveA.gi-wu0zO0mA6K3Ge6TZQqmXzwfPYEErV
       - NEXHEALTH_LOCATION_ID=293267
-      
-    command: ["npm", "run", "dev"]  # Run in dev mode with Nodemon
 
-  mongo:
-    image: mongo:6
-    container_name: mongo-db
+    env_file:
+      - .env
+    depends_on:
+      - nginx
+    networks:
+      - app-network
     ports:
-      - "27017:27017"
+      - "5000:5000"
+    command: ["npm", "run", "start"] 
+
+  # mongo:
+  #   image: mongo:6
+  #   container_name: mongo-db
+  #   volumes:
+  #     - mongo-data:/data/db
+  #   networks:
+  #     - app-network
+  #   healthcheck:
+  #     test: ["CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })"]
+  #     interval: 10s
+  #     retries: 5
+  #     start_period: 5s
+
+  nginx:
+    build:
+      context: ./nginx  # Ensure that the nginx folder contains a Dockerfile
+    # image: t
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    # depends_on:
+    #   backend:
+    #     condition: service_started
+    networks:
+      - app-network
     volumes:
-      - mongo-data:/data/db
+      - ./nginx/certs:/etc/nginx/certs:ro  # Ensure certs exist inside nginx folder
+    
+    command: ["nginx", "-g", "daemon off;"]
+
+networks:
+  app-network:
 
 volumes:
   mongo-data:
