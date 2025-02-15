@@ -25,7 +25,7 @@ app.use('/api/appointments', require('./routes/appointment.routes'));
 // ✅ Initial Route
 app.get('/', (req, res) => {
     res.status(200).json({
-        message: "Server responded hello"
+        message: 'Server responded',
     });
 });
 

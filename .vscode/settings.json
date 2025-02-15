@@ -17,12 +17,8 @@
     "[css]": {
       "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
-    "[python]": {
-      "editor.defaultFormatter": "ms-python.black-formatter"
-    },
-    "[cpp]": {
-      "editor.defaultFormatter": "ms-vscode.cpptools"
-    },
+   
+  
     "prettier.singleQuote": true,
     "prettier.tabWidth": 4,
     "github-actions.workflows.pinned.workflows": [
