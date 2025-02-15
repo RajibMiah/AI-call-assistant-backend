@@ -12,6 +12,8 @@ services:
       - NEXHEALTH_LOCATION_ID=293267
     env_file:
       - .env
+    ports:
+      - "5000:5000"
     networks:
       - app-network
     command: [ "npm", "run", "start" ]
@@ -32,23 +34,20 @@ services:
 
   nginx:
     build:
-      context: ./nginx # Ensure that the nginx folder contains a Dockerfile
+      context: ./nginx
     container_name: nginx
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-
     depends_on:
-      - backend # ✅ Updated this line
+      - backend
     networks:
       - app-network
-
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-    # - ./nginx/certs:/etc/nginx/certs:ro # Ensure certs exist inside nginx folder
-    # command: [ "nginx", "-g", "daemon off;" ]
-
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
 
   certbot:
     image: certbot/certbot
@@ -59,9 +58,10 @@ services:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
     command: certonly --webroot -w /var/www/certbot --force-renewal --email ahmedrajib942@gmail.com -d aiassist.eleveapps.ca --agree-tos
+
 networks:
   app-network:
-
+    driver: bridge
 
 volumes:
   mongo-data:
