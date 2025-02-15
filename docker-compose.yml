@@ -6,14 +6,14 @@ services:
     container_name: ai-assistant-backend
     environment:
       - NODE_ENV=production
-      - MONGO_URI=mongodb://mongo:27017/mydatabase
-      - NEXHEALTH_API_URL=https://nexhealth.info
-      - NEXHEALTH_SUBDOMAIN=fomoline-demo-practice-sr8swn
-      - NEXHEALTH_LOCATION_ID=293267
+      # - MONGO_URI=mongodb://mongo:27017/mydatabase
+      # - NEXHEALTH_API_URL=https://nexhealth.info
+      # - NEXHEALTH_SUBDOMAIN=fomoline-demo-practice-sr8swn
+      # - NEXHEALTH_LOCATION_ID=293267
     env_file:
       - .env
-    ports:
-      - "5000:5000"
+    # ports:
+    #   - "5000:5000"
     networks:
       - app-network
     command: [ "npm", "run", "start" ]

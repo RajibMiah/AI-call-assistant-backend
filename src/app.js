@@ -18,14 +18,14 @@ app.use(compression()); // Gzip compression
 app.use(cookieParser()); // Cookie parsing
 
 // 🚀 Routes
-// app.use('/api/auth', require('./routes/auth.routes')); // Authentication routes
+app.use('/api/auth', require('./routes/auth.routes')); // Authentication routes
 // app.use('/api/users', require('./routes/user.routes')); // User routes
 app.use('/api/appointments', require('./routes/appointment.routes'));
 
-// ✅ Fix the `/initiate` Route
+// ✅ Initial Route
 app.get('/', (req, res) => {
     res.status(200).json({
-        message: "Server responded"
+        message: "Server responded hello"
     });
 });
 
